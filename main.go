@@ -2,8 +2,11 @@ package main
 
 import (
 	"crypto/sha256"
+	"embed"
 	"encoding/hex"
 	"fmt"
+	"html/template"
+	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -14,6 +17,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed static/* templates/*
+var content embed.FS
 
 // Config 配置结构体
 type Config struct {
@@ -68,17 +74,19 @@ func main() {
 	}
 
 	r := gin.Default()
-	
-	// 获取当前工作目录
-	workDir, _ := os.Getwd()
-	
-	// 使用绝对路径加载模板
-	r.LoadHTMLGlob(filepath.Join(workDir, "templates/*"))
-	r.Static("/static", filepath.Join(workDir, "static"))
+
+	// 从嵌入的文件系统加载模板
+	templ := template.Must(template.ParseFS(content, "templates/*"))
+	r.SetHTMLTemplate(templ)
+
+	// 从嵌入的文件系统提供静态文件
+	staticFiles, _ := fs.Sub(content, "static")
+	r.StaticFS("/static", http.FS(staticFiles))
 
 	// 确保diary根目录存在
 	diaryRoot := config.Storage.DiaryRoot
 	if !filepath.IsAbs(diaryRoot) {
+		workDir, _ := os.Getwd()
 		diaryRoot = filepath.Join(workDir, diaryRoot)
 	}
 	if err := os.MkdirAll(diaryRoot, 0755); err != nil {

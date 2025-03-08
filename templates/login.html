@@ -41,6 +41,21 @@
             width: 100%;
             box-sizing: border-box;
         }
+
+        .github-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .github-link a {
+            color: var(--text-color);
+            text-decoration: none;
+            opacity: 0.8;
+        }
+
+        .github-link a:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -54,6 +69,9 @@
                 <div class="error-message">{{.error}}</div>
                 {{end}}
             </form>
+            <div class="github-link">
+                <a href="https://github.com/dianso/go-diary" target="_blank">GitHub 开源地址</a>
+            </div>
         </div>
     </div>
 </body>

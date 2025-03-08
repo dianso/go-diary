@@ -140,56 +140,76 @@ body {
 }
 
 @media (max-width: 768px) {
-    .container {
+    body {
+        margin: 0;
         padding: 0;
-        max-width: 100%;
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    .container {
+        max-width: none !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
     .calendar {
-        padding: 8px;
-        margin: 0;
-        width: 100%;
+        width: 96% !important;
+        padding: 2px;
+        margin: 0 auto;
         box-shadow: none;
+        overflow: hidden;
     }
     
     .calendar-header .d-flex {
         flex-direction: column;
         align-items: stretch !important;
-        gap: 8px;
+        gap: 2px;
     }
 
     .calendar-header .d-flex > div:last-child {
-        display: flex;
-        gap: 4px;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 2px;
     }
     
     .btn-group {
-        flex: 1;
-        display: flex;
-        justify-content: space-between;
-        margin-right: 4px;
+        display: flex !important;
+        justify-content: center !important;
+        gap: 2px;
+        margin: 0 !important;
+    }
+
+    .btn-group > .btn {
+        flex: none !important;
+        border-radius: 3px !important;
+        font-size: 0.65rem !important;
+        padding: 1px 3px !important;
     }
 
     .weekday-header {
-        margin: 8px 0;
+        margin: 2px 0;
     }
 
     .weekday-header .col {
-        font-size: 0.8em;
-        padding: 4px 0;
+        font-size: 0.6em;
+        padding: 1px 0;
         text-align: center;
     }
 
     #currentMonth {
-        font-size: 1.2rem;
-        margin: 8px 0;
+        font-size: 0.9rem;
+        margin: 2px 0;
         text-align: center;
     }
 
     .diary-count {
-        margin: 4px 0;
-        font-size: 0.85rem;
-        padding: 4px 8px;
+        margin: 1px 0;
+        font-size: 0.7rem;
+        padding: 1px 2px;
         text-align: center;
         width: 100%;
         box-sizing: border-box;
@@ -197,20 +217,22 @@ body {
 
     .year-select {
         width: 100%;
-        font-size: 0.85rem;
+        font-size: 0.7rem;
         margin-right: 0;
-        padding: 4px;
+        padding: 1px;
+        height: auto;
     }
 
     .btn-custom {
-        font-size: 0.8rem;
-        padding: 4px 6px;
+        font-size: 0.65rem;
+        padding: 1px 3px;
         white-space: nowrap;
+        height: 20px;
     }
 
     .theme-switch {
-        width: 32px;
-        height: 32px;
+        width: 20px;
+        height: 20px;
         margin: 0;
         flex-shrink: 0;
         padding: 0;
@@ -218,9 +240,9 @@ body {
 
     #calendarGrid {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
+        grid-template-columns: repeat(7, minmax(0, 1fr));
         gap: 1px;
-        margin-top: 8px;
+        margin-top: 2px;
     }
 
     #calendarGrid .row {
@@ -228,44 +250,80 @@ body {
     }
 
     .calendar-day {
-        min-height: 35px;
-        padding: 2px;
-        margin: 1px;
-        font-size: 0.85em;
+        min-height: 24px;
+        padding: 0;
+        margin: 0;
+        font-size: 0.7em;
     }
 
     .calendar-day .day-number {
-        font-size: 1em;
+        font-size: 0.8em;
         font-weight: 500;
         margin: 0;
     }
 
     .calendar-day .day-label {
-        font-size: 0.65em;
+        font-size: 0.5em;
     }
 
     .calendar-day.empty {
-        min-height: 35px;
+        min-height: 24px;
     }
 }
 
 @media (max-width: 360px) {
     .calendar {
-        padding: 4px;
-    }
-
-    .calendar-day {
-        min-height: 32px;
         padding: 1px;
     }
 
     .btn-custom {
-        font-size: 0.75rem;
-        padding: 3px 4px;
+        font-size: 0.6rem;
+        padding: 0 2px;
+        height: 18px;
+    }
+
+    .theme-switch {
+        width: 18px;
+        height: 18px;
     }
 
     .weekday-header .col {
+        font-size: 0.55em;
+        padding: 0;
+    }
+
+    .calendar-day {
+        min-height: 20px;
+        padding: 0;
+    }
+
+    .calendar-day .day-number {
         font-size: 0.75em;
+    }
+
+    .calendar-day .day-label {
+        font-size: 0.45em;
+    }
+
+    #prevMonth, #nextMonth {
+        font-size: 0.55rem;
+    }
+
+    #currentMonth {
+        font-size: 0.8rem;
+    }
+
+    .year-select {
+        font-size: 0.65rem;
+    }
+
+    .diary-count {
+        font-size: 0.65rem;
+    }
+
+    .btn-group > .btn {
+        font-size: 0.6rem !important;
+        padding: 0 2px !important;
     }
 }
 
