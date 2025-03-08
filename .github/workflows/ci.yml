@@ -1,0 +1,46 @@
+name: Build Go Program for Multiple Platforms
+
+on:
+  push:
+    branches:
+      - main  # 触发构建的分支，可以根据需要修改
+  pull_request:
+    branches:
+      - main  # 触发 pull request 时构建
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # 默认使用的系统，构建时会在多个平台上进行
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        architecture: [amd64, arm64]  # 支持 amd64 和 arm64 架构
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.24'  # 设置 Go 版本为 1.24
+
+      - name: Build Go Program
+        run: |
+          GOOS=${{ matrix.os == 'windows-latest' && 'windows' || matrix.os == 'macos-latest' && 'darwin' || 'linux' }}
+          GOARCH=${{ matrix.architecture }}
+          GOARM=${{ matrix.architecture == 'arm64' && '7' || '' }} # 设置 ARM 架构的版本
+          
+          echo "Building go-diary for GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM"
+          GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM go build -o go-diary-$GOOS-$GOARCH$GOARM .
+
+      - name: Upload compiled binaries
+        uses: actions/upload-artifact@v2
+        with:
+          name: go-diary
+          path: |
+            go-diary-linux-amd64
+            go-diary-linux-arm64
+            go-diary-windows-amd64.exe
+            go-diary-darwin-amd64
+            go-diary-darwin-arm64
