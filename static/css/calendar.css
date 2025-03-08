@@ -45,6 +45,7 @@ body {
     padding: 10px;
     margin: 2px;
     position: relative;
+    min-height: 60px;
 }
 
 .calendar-day .date-label {
@@ -139,60 +140,56 @@ body {
 }
 
 @media (max-width: 768px) {
+    .container {
+        padding: 0;
+        max-width: 100%;
+    }
+
     .calendar {
-        padding: 10px;
-        margin: 10px;
-        width: calc(100% - 20px);
+        padding: 8px;
+        margin: 0;
+        width: 100%;
+        box-shadow: none;
     }
     
     .calendar-header .d-flex {
         flex-direction: column;
         align-items: stretch !important;
-        gap: 10px;
+        gap: 8px;
     }
 
     .calendar-header .d-flex > div:last-child {
         display: flex;
-        gap: 5px;
+        gap: 4px;
     }
     
     .btn-group {
         flex: 1;
         display: flex;
         justify-content: space-between;
-        margin-right: 5px;
+        margin-right: 4px;
     }
 
-    .calendar-day {
-        padding: 3px;
-        margin: 1px;
-        min-height: 40px;
-        font-size: 0.9em;
-    }
-
-    .calendar-day .date-label {
-        font-size: 1em;
-    }
-
-    .calendar-day .relative-date {
-        font-size: 0.7em;
+    .weekday-header {
+        margin: 8px 0;
     }
 
     .weekday-header .col {
-        font-size: 0.85em;
-        padding: 5px 2px;
+        font-size: 0.8em;
+        padding: 4px 0;
+        text-align: center;
     }
 
     #currentMonth {
-        font-size: 1.3rem;
-        margin: 10px 0;
+        font-size: 1.2rem;
+        margin: 8px 0;
         text-align: center;
     }
 
     .diary-count {
-        margin: 5px 0;
-        font-size: 0.9rem;
-        padding: 6px 12px;
+        margin: 4px 0;
+        font-size: 0.85rem;
+        padding: 4px 8px;
         text-align: center;
         width: 100%;
         box-sizing: border-box;
@@ -200,36 +197,75 @@ body {
 
     .year-select {
         width: 100%;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         margin-right: 0;
+        padding: 4px;
     }
 
     .btn-custom {
-        font-size: 0.85rem;
-        padding: 6px 8px;
+        font-size: 0.8rem;
+        padding: 4px 6px;
         white-space: nowrap;
     }
 
     .theme-switch {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         margin: 0;
         flex-shrink: 0;
+        padding: 0;
     }
 
     #calendarGrid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 2px;
-        margin-top: 10px;
+        gap: 1px;
+        margin-top: 8px;
     }
 
     #calendarGrid .row {
         display: contents;
     }
 
-    #calendarGrid .col {
-        padding: 0;
+    .calendar-day {
+        min-height: 35px;
+        padding: 2px;
+        margin: 1px;
+        font-size: 0.85em;
+    }
+
+    .calendar-day .day-number {
+        font-size: 1em;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .calendar-day .day-label {
+        font-size: 0.65em;
+    }
+
+    .calendar-day.empty {
+        min-height: 35px;
+    }
+}
+
+@media (max-width: 360px) {
+    .calendar {
+        padding: 4px;
+    }
+
+    .calendar-day {
+        min-height: 32px;
+        padding: 1px;
+    }
+
+    .btn-custom {
+        font-size: 0.75rem;
+        padding: 3px 4px;
+    }
+
+    .weekday-header .col {
+        font-size: 0.75em;
     }
 }
 

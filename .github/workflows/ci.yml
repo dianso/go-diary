@@ -3,48 +3,116 @@ name: Build Go Program for Multiple Platforms
 on:
   push:
     branches:
-      - main  # 触发构建的分支，可以根据需要修改
+      - main
   pull_request:
     branches:
-      - main  # 触发 pull request 时构建
+      - main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest  # 默认使用的系统，构建时会在多个平台上进行
-
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        architecture: [amd64, arm64]  # 支持 amd64 和 arm64 架构
+  build-linux-amd64:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.24'  # 设置 Go 版本为 1.24
-
-      - name: Build Go Program
+          go-version: '1.24'
+      - name: Build Go Program for Linux amd64
         run: |
-          GOOS=${{ matrix.os == 'windows-latest' && 'windows' || matrix.os == 'macos-latest' && 'darwin' || 'linux' }}
-          GOARCH=${{ matrix.architecture }}
-          GOARM=${{ matrix.architecture == 'arm64' && '7' || '' }} # 设置 ARM 架构的版本
-          
-          echo "Building go-diary for GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM"
-          GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM go build -o go-diary-$GOOS-$GOARCH$GOARM .
-
-      - name: List files
-        run: |
-          ls -l
-
-      - name: Upload compiled binaries
+          GOOS=linux GOARCH=amd64 go build -o go-diary-linux-amd64 .
+      - name: Upload Linux amd64 binary
         uses: actions/upload-artifact@v2
         with:
-          name: go-diary
-          path: |
-            go-diary-linux-amd64
-            go-diary-linux-arm64
-            go-diary-windows-amd64.exe
-            go-diary-darwin-amd64
-            go-diary-darwin-arm64
+          name: go-diary-linux-amd64
+          path: go-diary-linux-amd64
+
+  build-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.24'
+      - name: Build Go Program for Linux arm64
+        run: |
+          GOOS=linux GOARCH=arm64 go build -o go-diary-linux-arm64 .
+      - name: Upload Linux arm64 binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: go-diary-linux-arm64
+          path: go-diary-linux-arm64
+
+  build-windows-amd64:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.24'
+      - name: Build Go Program for Windows amd64
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o go-diary-windows-amd64.exe .
+      - name: Upload Windows amd64 binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: go-diary-windows-amd64
+          path: go-diary-windows-amd64.exe
+
+  build-windows-arm64:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.24'
+      - name: Build Go Program for Windows arm64
+        run: |
+          GOOS=windows GOARCH=arm64 go build -o go-diary-windows-arm64.exe .
+      - name: Upload Windows arm64 binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: go-diary-windows-arm64
+          path: go-diary-windows-arm64.exe
+
+  build-macos-amd64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.24'
+      - name: Build Go Program for macOS amd64
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -o go-diary-darwin-amd64 .
+      - name: Upload macOS amd64 binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: go-diary-darwin-amd64
+          path: go-diary-darwin-amd64
+
+  build-macos-arm64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.24'
+      - name: Build Go Program for macOS arm64
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -o go-diary-darwin-arm64 .
+      - name: Upload macOS arm64 binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: go-diary-darwin-arm64
+          path: go-diary-darwin-arm64
