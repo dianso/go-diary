@@ -144,6 +144,11 @@ body {
 }
 
 @media (max-width: 768px) {
+    :root {
+        --calendar-width: min(100vw, 400px);
+        --calendar-day-size: calc((var(--calendar-width) - 20px) / 7);
+    }
+
     body {
         margin: 0;
         padding: 0;
@@ -152,9 +157,9 @@ body {
     }
 
     .container {
-        width: 100% !important;
+        width: var(--calendar-width) !important;
         padding: 5px !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
     }
 
     .calendar {
@@ -207,6 +212,8 @@ body {
         font-size: 0.6em;
         padding: 1px 0;
         text-align: center;
+        width: var(--calendar-day-size);
+        box-sizing: border-box;
     }
 
     #currentMonth {
@@ -250,12 +257,18 @@ body {
     #calendarGrid {
         gap: 1px;
         margin-top: 5px;
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(7, var(--calendar-day-size));
     }
 
     .calendar-day {
+        width: var(--calendar-day-size);
+        height: var(--calendar-day-size);
         padding: 1px;
         font-size: 0.7em;
         min-height: auto;
+        box-sizing: border-box;
     }
 
     .calendar-day .day-number {
@@ -280,6 +293,13 @@ body {
         width: 4px;
         height: 4px;
         bottom: 1px;
+    }
+}
+
+@media (max-width: 400px) {
+    :root {
+        --calendar-width: 100vw;
+        --calendar-day-size: calc((100vw - 20px) / 7);
     }
 }
 
