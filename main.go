@@ -108,30 +108,38 @@ func main() {
 	authorized.Use(authMiddleware())
 	{
 		authorized.GET("/calendar", func(c *gin.Context) {
+			now := time.Now()
+			title := fmt.Sprintf("%d年%d月", now.Year(), int(now.Month()))
+
 			c.HTML(http.StatusOK, "calendar.html", gin.H{
-				"title": config.Title,
+				"title": title,
 			})
 		})
 
-		authorized.GET("/diary/:date", func(c *gin.Context) {
-			date := c.Param("date")
-			if !isValidDate(date) {
+		authorized.GET("/diary", func(c *gin.Context) {
+			dateStr := c.Query("date")
+			if len(dateStr) != 8 {
 				c.String(http.StatusBadRequest, "无效的日期格式")
 				return
 			}
 
-			dateObj, _ := time.Parse("2006-01-02", date)
+			// 将YYYYMMDD格式转换为YYYY-MM-DD格式
+			date := fmt.Sprintf("%s-%s-%s", dateStr[:4], dateStr[4:6], dateStr[6:])
+			dateObj, err := time.Parse("2006-01-02", date)
+			if err != nil {
+				c.String(http.StatusBadRequest, "无效的日期格式")
+				return
+			}
+
 			year := dateObj.Format("2006")
 			month := dateObj.Format("2006年1月")
-			fileName := dateObj.Format("20060102") + ".txt"
+			fileName := dateStr + ".txt"
 			yearDir := filepath.Join(diaryRoot, year)
 			filePath := filepath.Join(yearDir, fileName)
 
 			content := ""
 			if data, err := ioutil.ReadFile(filePath); err == nil {
 				content = string(data)
-			} else {
-				content = ""
 			}
 
 			c.HTML(http.StatusOK, "diary.html", gin.H{
@@ -142,34 +150,47 @@ func main() {
 			})
 		})
 
-		authorized.POST("/diary/:date", func(c *gin.Context) {
-			date := c.Param("date")
-			if !isValidDate(date) {
+		authorized.POST("/diary", func(c *gin.Context) {
+			dateStr := c.Query("date")
+			if len(dateStr) != 8 {
 				c.String(http.StatusBadRequest, "无效的日期格式")
 				return
 			}
 
-			content := c.PostForm("content")
+			// 将YYYYMMDD格式转换为YYYY-MM-DD格式
+			date := fmt.Sprintf("%s-%s-%s", dateStr[:4], dateStr[4:6], dateStr[6:])
+			dateObj, err := time.Parse("2006-01-02", date)
+			if err != nil {
+				c.String(http.StatusBadRequest, "无效的日期格式")
+				return
+			}
 
-			dateObj, _ := time.Parse("2006-01-02", date)
+			// 接收JSON格式的数据
+			var data struct {
+				Content string `json:"content"`
+			}
+			if err := c.BindJSON(&data); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "无效的数据格式"})
+				return
+			}
+
 			year := dateObj.Format("2006")
-			fileName := dateObj.Format("20060102") + ".txt"
 			yearDir := filepath.Join(diaryRoot, year)
 
 			// 创建年份目录
 			if err := os.MkdirAll(yearDir, 0755); err != nil {
-				c.String(http.StatusInternalServerError, "创建目录失败")
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "创建目录失败"})
 				return
 			}
 
 			// 保存文件
-			filePath := filepath.Join(yearDir, fileName)
-			if err := ioutil.WriteFile(filePath, []byte(content), 0644); err != nil {
-				c.String(http.StatusInternalServerError, "保存失败")
+			filePath := filepath.Join(yearDir, dateStr+".txt")
+			if err := ioutil.WriteFile(filePath, []byte(data.Content), 0644); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "保存失败"})
 				return
 			}
 
-			c.Redirect(http.StatusFound, "/calendar")
+			c.JSON(http.StatusOK, gin.H{"message": "保存成功"})
 		})
 
 		authorized.GET("/api/diary-dates", func(c *gin.Context) {
@@ -201,7 +222,7 @@ func main() {
 						baseName := strings.TrimSuffix(file.Name(), ".txt")
 						if len(baseName) == 8 {
 							// 转换为YYYY-MM-DD格式
-							date := baseName[:4] + "-" + baseName[4:6] + "-" + baseName[6:]
+							date := fmt.Sprintf("%s-%s-%s", baseName[:4], baseName[4:6], baseName[6:])
 							dates = append(dates, date)
 						}
 					}

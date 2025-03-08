@@ -7,15 +7,14 @@ class DiaryCalendar {
 
     init() {
         this.yearSelect = document.getElementById('yearSelect');
-        this.currentMonthElement = document.getElementById('currentMonth');
         this.totalDiaryCountElement = document.getElementById('totalDiaryCount');
         this.attachEventListeners();
         this.getDiaryDates();
     }
 
     attachEventListeners() {
-        document.getElementById('prevMonth').addEventListener('click', () => this.changeMonth(-1));
-        document.getElementById('nextMonth').addEventListener('click', () => this.changeMonth(1));
+        document.getElementById('prevMonth').addEventListener('click', () => this.prevMonth());
+        document.getElementById('nextMonth').addEventListener('click', () => this.nextMonth());
         document.getElementById('todayBtn').addEventListener('click', () => this.goToToday());
         this.yearSelect.addEventListener('change', () => this.changeYear());
     }
@@ -56,7 +55,7 @@ class DiaryCalendar {
         sortedYears.forEach(year => {
             const option = document.createElement('option');
             option.value = year;
-            option.textContent = `${year}年`;
+            option.textContent = year;
             if (year === this.currentDate.getFullYear()) {
                 option.selected = true;
             }
@@ -172,7 +171,9 @@ class DiaryCalendar {
         `;
 
         dayContent.addEventListener('click', () => {
-            window.location.href = `/diary/${dateStr}`;
+            // 将日期转换为YYYYMMDD格式
+            const numericDate = dateStr.replace(/-/g, '');
+            window.location.href = `/diary?date=${numericDate}`;
         });
 
         dayDiv.appendChild(dayContent);
@@ -191,8 +192,8 @@ class DiaryCalendar {
         const month = this.currentDate.getMonth();
         
         // 更新月份标题
-        this.currentMonthElement.textContent = `${year}年${month + 1}月`;
-
+        this.updateCalendarTitle(year, month);
+        
         // 清空现有日历内容
         const calendarGrid = document.getElementById('calendarGrid');
         calendarGrid.innerHTML = '';
@@ -204,6 +205,38 @@ class DiaryCalendar {
         days.forEach(day => {
             calendarGrid.appendChild(this.createCalendarDay(day));
         });
+
+        // 触发日期变化事件
+        const event = new CustomEvent('calendarDateChanged', {
+            detail: { year: year, month: month }
+        });
+        document.dispatchEvent(event);
+    }
+
+    updateCalendarTitle(year, month) {
+        const title = `${year}年${month + 1}月`;
+        document.title = title;
+        
+        // 更新URL
+        const yearMonth = `${year}${String(month + 1).padStart(2, '0')}`;
+        const newUrl = `/calendar?date=${yearMonth}`;
+        window.history.pushState({}, '', newUrl);
+    }
+
+    prevMonth() {
+        this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+        this.renderCalendar();
+    }
+
+    nextMonth() {
+        this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+        this.renderCalendar();
+    }
+
+    goToToday() {
+        this.currentDate = new Date();
+        this.yearSelect.value = this.currentDate.getFullYear();
+        this.renderCalendar();
     }
 }
 

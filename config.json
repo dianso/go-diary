@@ -1,0 +1,7 @@
+{
+    "title": "我的日记本",
+    "port": 25252,
+    "security": {
+        "password": "123456"
+    }
+}
