@@ -126,8 +126,8 @@
 
         .theme-switch {
             position: static;
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             padding: 0;
             border: 2px solid var(--text-color);
             background-color: transparent;
@@ -161,19 +161,12 @@
             
             .diary-content {
                 font-size: 14px;
-                margin-top: 120px;
+                margin-top: 50px;
+                padding-top: 10px;
             }
 
             .diary-header {
                 margin-bottom: 10px;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                background: var(--bg-color);
-                padding: 10px;
-                z-index: 1000;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             }
 
             .diary-header h1 {
@@ -196,32 +189,40 @@
 
             .diary-actions {
                 position: fixed;
-                top: 70px;
-                right: 10px;
+                top: 0;
+                right: 0;
                 z-index: 1000;
                 background: var(--bg-color);
-                padding: 5px;
-                border-radius: 8px;
+                padding: 8px;
+                border-radius: 0 0 0 8px;
                 box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             }
 
             .diary-navigation {
                 margin-right: 0;
+                padding: 4px;
             }
 
-            .nav-link, .save-status, .btn-custom {
-                font-size: 14px;
-                padding: 4px 8px;
+            .nav-link, .save-status {
+                font-size: 12px;
+                padding: 2px 6px;
+            }
+
+            .btn-custom {
+                font-size: 12px;
+                padding: 2px 6px;
+                height: 24px;
+                line-height: 20px;
             }
 
             .theme-switch {
-                width: 32px;
-                height: 32px;
-                font-size: 16px;
+                width: 24px;
+                height: 24px;
+                font-size: 14px;
+                margin-left: 5px;
             }
 
             .action-buttons {
-                display: flex;
                 gap: 5px;
             }
         }
@@ -351,26 +352,28 @@
                 // 保存到本地存储
                 saveToLocalStorage(currentContent);
 
-                const formData = new FormData();
-                formData.append('content', currentContent);
-
                 const response = await fetch(window.location.href, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `content=${encodeURIComponent(currentContent)}`,
                 });
 
-                if (response.ok) {
-                    content = currentContent;
-                    lastSaveTime = Date.now();
-                    retryCount = 0;
-                    updateSaveStatus('success', '已保存');
-                } else {
-                    throw new Error(`服务器返回错误: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
+                content = currentContent;
+                lastSaveTime = Date.now();
+                updateSaveStatus('success', '已保存');
+                retryCount = 0;
             } catch (error) {
                 console.error('保存失败:', error);
+                retryCount++;
+
                 if (retryAttempt < MAX_RETRIES) {
-                    updateSaveStatus('error', `保存失败，${MAX_RETRIES - retryAttempt}秒后重试...`);
+                    updateSaveStatus('error', `保存失败，${RETRY_DELAY/1000}秒后重试...`);
                     setTimeout(() => saveContent(retryAttempt + 1), RETRY_DELAY);
                 } else {
                     updateSaveStatus('error', '保存失败，请检查网络连接');
@@ -385,53 +388,14 @@
             }
         }, 1000);
 
-        textarea.addEventListener('input', debouncedSave);
-
-        // 页面加载时检查是否有未保存的内容
-        window.addEventListener('load', () => {
-            const savedContent = restoreFromLocalStorage();
-            if (savedContent && savedContent !== textarea.value) {
-                if (confirm('发现未保存的内容，是否恢复？')) {
-                    textarea.value = savedContent;
-                    content = savedContent;
-                    adjustHeight();
-                }
+        textarea.addEventListener('input', () => {
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
             }
+            saveTimeout = setTimeout(debouncedSave, 1000);
         });
 
-        // 页面关闭前检查是否有未保存的更改
-        window.addEventListener('beforeunload', (e) => {
-            if (textarea.value !== content) {
-                e.preventDefault();
-                e.returnValue = '有未保存的更改，确定要离开吗？';
-            }
-        });
-
-        // 添加自动保存的样式
-        const style = document.createElement('style');
-        style.textContent = `
-            .save-status {
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-size: 16px;
-                transition: opacity 0.3s;
-                background: var(--bg-color);
-                margin-right: 15px;
-                display: inline-block;
-            }
-            .save-status.saving {
-                color: var(--text-color);
-            }
-            .save-status.success {
-                color: #4caf50;
-            }
-            .save-status.error {
-                color: #f44336;
-            }
-        `;
-        document.head.appendChild(style);
-
-        // 文本框自动调整高度功能
+        // 自动调整文本框高度
         function adjustHeight() {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
@@ -441,11 +405,12 @@
         window.addEventListener('resize', adjustHeight);
         
         // 页面加载完成后自动调整高度
-        adjustHeight();
+        window.addEventListener('load', adjustHeight);
 
-        // 日期导航功能
+        // 日期相关功能
         const currentDate = new Date('{{.date}}');
-        
+        const dateRelative = document.getElementById('dateRelative');
+
         function formatDate(date) {
             return date.toISOString().split('T')[0];
         }
@@ -458,36 +423,40 @@
         // 设置今天链接
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const todayLink = document.getElementById('todayLink');
-        todayLink.href = `/diary/${formatDate(today)}`;
-        if (formatDate(currentDate) === formatDate(today)) {
-            todayLink.classList.add('disabled');
-        }
+        document.getElementById('todayLink').href = `/diary/${formatDate(today)}`;
 
         // 设置明天链接
         const tomorrow = new Date(currentDate);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowLink = document.getElementById('tomorrowLink');
-        // 如果是未来日期，禁用链接
-        if (tomorrow > today) {
-            tomorrowLink.classList.add('disabled');
+        document.getElementById('tomorrowLink').href = `/diary/${formatDate(tomorrow)}`;
+
+        // 显示相对日期
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const diff = Math.round((currentDate - now) / (1000 * 60 * 60 * 24));
+
+        let relativeText = '';
+        if (diff === 0) {
+            relativeText = '今天';
+        } else if (diff === 1) {
+            relativeText = '明天';
+        } else if (diff === -1) {
+            relativeText = '昨天';
+        } else if (diff > 1) {
+            relativeText = `${diff}天后`;
         } else {
-            tomorrowLink.href = `/diary/${formatDate(tomorrow)}`;
+            relativeText = `${-diff}天前`;
         }
 
-        // 相对日期显示
-        const dateRelative = document.getElementById('dateRelative');
-        const dateDiff = Math.round((currentDate - today) / (1000 * 3600 * 24));
-        if (dateDiff === 0) {
-            dateRelative.textContent = '今天';
-        } else if (dateDiff === 1) {
-            dateRelative.textContent = '明天';
-        } else if (dateDiff === -1) {
-            dateRelative.textContent = '昨天';
-        } else if (dateDiff > 0) {
-            dateRelative.textContent = `后${dateDiff}天`;
-        } else {
-            dateRelative.textContent = `${-dateDiff}天前`;
+        dateRelative.textContent = relativeText;
+
+        // 尝试从本地存储恢复内容
+        const savedContent = restoreFromLocalStorage();
+        if (savedContent && savedContent !== textarea.value) {
+            if (confirm('发现未保存的内容，是否恢复？')) {
+                textarea.value = savedContent;
+                adjustHeight();
+            }
         }
     </script>
 </body>
