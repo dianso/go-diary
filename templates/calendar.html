@@ -1,43 +1,43 @@
 <!DOCTYPE html>
 <html lang="zh" data-theme="light">
 <head>
+    <title>日记本</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.title}}</title>
-    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/style.css" rel="stylesheet">
-    <link href="/static/css/theme.css" rel="stylesheet">
-    <link href="/static/css/calendar.css" rel="stylesheet">
+    <link href="/static/css/bootstrap.min.css?v=202503081749" rel="stylesheet">
+    <link href="/static/css/calendar.css?v=202503081749" rel="stylesheet">
+    <link href="/static/css/theme.css?v=202503081749" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <div class="calendar">
             <div class="calendar-header">
-                <div class="d-flex align-items-center">
-                    <select id="yearSelect" class="form-select year-select"></select>
-                    <span id="totalDiaryCount" class="diary-count">日记数量：0篇</span>
-                    <h1 id="currentMonth" class="mb-0"></h1>
-                    <div class="btn-group ms-auto">
-                        <button id="prevMonth" class="btn btn-custom btn-outline-primary">＜ 上个月</button>
-                        <button id="todayBtn" class="btn btn-custom btn-primary">今天</button>
-                        <button id="nextMonth" class="btn btn-custom btn-outline-primary">下个月 ＞</button>
+                <div class="nav-controls">
+                    <div class="nav-left">
+                        <select id="yearSelect" class="year-select"></select>
+                        <button id="prevMonth" class="btn btn-primary">上个月</button>
+                        <button id="todayBtn" class="btn btn-primary">今天</button>
+                        <button id="nextMonth" class="btn btn-primary">下个月</button>
+                        <h2 id="currentMonth" class="current-month"></h2>
+                        <span id="totalDiaryCount" class="diary-count">日记数量：0篇</span>
+                        <button class="theme-switch btn btn-custom btn-outline-primary" id="themeSwitch" title="切换主题" style="display: none;">☀️</button>
+                        <button id="themeSwitch" class="btn btn-primary theme-btn">🌙</button>
                     </div>
-                    <button class="theme-switch btn btn-custom btn-outline-primary ms-2" id="themeSwitch" title="切换主题">☀️</button>
                 </div>
             </div>
-            <div class="row weekday-header text-center">
-                <div class="col">周一</div>
-                <div class="col">周二</div>
-                <div class="col">周三</div>
-                <div class="col">周四</div>
-                <div class="col">周五</div>
-                <div class="col">周六</div>
-                <div class="col">周日</div>
+            <div class="weekday-header">
+                <div class="col">一</div>
+                <div class="col">二</div>
+                <div class="col">三</div>
+                <div class="col">四</div>
+                <div class="col">五</div>
+                <div class="col">六</div>
+                <div class="col">日</div>
             </div>
             <div id="calendarGrid"></div>
         </div>
     </div>
-    <script src="/static/js/theme.js"></script>
-    <script src="/static/js/calendar.js"></script>
+    <script src="/static/js/theme.js?v=202503081749"></script>
+    <script src="/static/js/calendar.js?v=202503081749"></script>
 </body>
 </html>
