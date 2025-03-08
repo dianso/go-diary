@@ -34,6 +34,10 @@ jobs:
           echo "Building go-diary for GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM"
           GOOS=$GOOS GOARCH=$GOARCH GOARM=$GOARM go build -o go-diary-$GOOS-$GOARCH$GOARM .
 
+      - name: List files
+        run: |
+          ls -l
+
       - name: Upload compiled binaries
         uses: actions/upload-artifact@v2
         with:

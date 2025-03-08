@@ -141,22 +141,25 @@ body {
 @media (max-width: 768px) {
     .calendar {
         padding: 10px;
-        margin: 10px auto;
+        margin: 10px;
+        width: 100%;
     }
     
-    .calendar-header {
+    .calendar-header .d-flex {
         flex-direction: column;
-        gap: 15px;
+        align-items: stretch !important;
+        gap: 10px;
     }
     
     .btn-group {
         width: 100%;
-        justify-content: center;
+        justify-content: space-between;
     }
 
     .calendar-day {
         padding: 3px;
         margin: 1px;
+        min-height: 40px;
     }
 
     .calendar-day .date-label {
@@ -172,28 +175,37 @@ body {
 
     .weekday-header .col {
         font-size: 0.85em;
+        padding: 5px 2px;
     }
 
     #currentMonth {
         font-size: 1.3rem;
-        margin-bottom: 1rem;
+        margin: 10px 0;
+        text-align: center;
     }
 
     .diary-count {
-        margin-left: 0;
-        margin-top: 10px;
+        margin: 5px 0;
         font-size: 0.9rem;
         padding: 6px 12px;
+        text-align: center;
+        width: 100%;
     }
 
     .year-select {
-        width: 100px;
+        width: 100%;
         font-size: 0.9rem;
     }
 
     .btn-custom {
-        font-size: 0.9rem;
-        padding: 6px 12px;
+        font-size: 0.85rem;
+        padding: 6px 8px;
+    }
+
+    .theme-switch {
+        width: 36px;
+        height: 36px;
+        margin: 5px auto;
     }
 }
 
