@@ -1,0 +1,7 @@
+title: "备胎日记本"
+server:
+  port: 25252
+security:
+  password: "hensinilea!"
+storage:
+  diary_root: "diary"
