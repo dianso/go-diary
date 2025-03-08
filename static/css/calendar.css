@@ -7,20 +7,13 @@ body {
     overflow-x: hidden;
 }
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
 .calendar {
-    background-color: var(--bg-color);
-    border-radius: 10px;
+    max-width: 1200px;
+    margin: 30px auto;
     padding: 20px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    margin: 20px auto;
-    width: 100%;
-    max-width: 800px;
+    background-color: var(--bg-color);
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .weekday-header {
@@ -29,12 +22,13 @@ body {
     border-bottom: 1px solid var(--border-color);
 }
 
-#calendarGrid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    width: 100%;
-    margin-top: 10px;
+#calendarGrid .row {
+    margin: 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#calendarGrid .row:last-child {
+    border-bottom: none;
 }
 
 .calendar-day {
@@ -48,7 +42,8 @@ body {
     transition: background-color 0.2s;
     text-decoration: none;
     color: var(--text-color);
-    padding: 5px;
+    padding: 10px;
+    margin: 2px;
     position: relative;
 }
 
@@ -144,218 +139,61 @@ body {
 }
 
 @media (max-width: 768px) {
-    :root {
-        --calendar-width: min(100vw, 400px);
-        --calendar-day-size: calc((var(--calendar-width) - 20px) / 7);
-    }
-
-    body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        overflow-x: hidden;
-    }
-
-    .container {
-        width: var(--calendar-width) !important;
-        padding: 5px !important;
-        margin: 0 auto !important;
-    }
-
     .calendar {
-        width: 100% !important;
-        padding: 5px !important;
-        margin: 5px auto !important;
-        box-shadow: none;
-        border-radius: 0;
-    }
-
-    .calendar-header {
-        margin-bottom: 5px;
+        padding: 10px;
+        margin: 10px auto;
     }
     
-    .calendar-header .d-flex {
+    .calendar-header {
         flex-direction: column;
-        align-items: stretch !important;
-        gap: 2px;
-    }
-
-    .calendar-header .d-flex > div:last-child {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 2px;
+        gap: 15px;
     }
     
     .btn-group {
-        display: flex !important;
-        justify-content: center !important;
-        gap: 2px;
-        margin: 0 !important;
-    }
-
-    .btn-group > .btn {
-        flex: none !important;
-        border-radius: 3px !important;
-        font-size: 0.65rem !important;
-        padding: 1px 3px !important;
-        height: 20px;
-        line-height: 18px;
-    }
-
-    .weekday-header {
-        margin: 2px 0;
-    }
-
-    .weekday-header .col {
-        font-size: 0.6em;
-        padding: 1px 0;
-        text-align: center;
-        width: var(--calendar-day-size);
-        box-sizing: border-box;
-    }
-
-    #currentMonth {
-        font-size: 0.9rem;
-        margin: 2px 0;
-        text-align: center;
-    }
-
-    .diary-count {
-        margin: 1px 0;
-        font-size: 0.7rem;
-        padding: 1px 2px;
-        text-align: center;
         width: 100%;
-        box-sizing: border-box;
-    }
-
-    .year-select {
-        width: 100%;
-        font-size: 0.7rem;
-        margin-right: 0;
-        padding: 1px;
-        height: auto;
-    }
-
-    .btn-custom {
-        font-size: 0.65rem;
-        padding: 1px 3px;
-        white-space: nowrap;
-        height: 20px;
-    }
-
-    .theme-switch {
-        width: 20px;
-        height: 20px;
-        margin: 0;
-        flex-shrink: 0;
-        padding: 0;
-    }
-
-    #calendarGrid {
-        gap: 1px;
-        margin-top: 5px;
-        width: 100%;
-        display: grid;
-        grid-template-columns: repeat(7, var(--calendar-day-size));
+        justify-content: center;
     }
 
     .calendar-day {
-        width: var(--calendar-day-size);
-        height: var(--calendar-day-size);
-        padding: 1px;
-        font-size: 0.7em;
-        min-height: auto;
-        box-sizing: border-box;
+        padding: 3px;
+        margin: 1px;
     }
 
-    .calendar-day .day-number {
-        font-size: 0.8em;
-        font-weight: 500;
-        margin: 0;
-    }
-
-    .calendar-day .day-label {
-        font-size: 0.5em;
+    .calendar-day .date-label {
+        font-size: 0.9em;
+        margin-bottom: 2px;
     }
 
     .calendar-day .relative-date {
-        display: none;
-    }
-
-    .calendar-day.empty {
-        min-height: auto;
-    }
-
-    .calendar-day.has-diary::after {
-        width: 4px;
-        height: 4px;
-        bottom: 1px;
-    }
-}
-
-@media (max-width: 400px) {
-    :root {
-        --calendar-width: 100vw;
-        --calendar-day-size: calc((100vw - 20px) / 7);
-    }
-}
-
-@media (max-width: 360px) {
-    .calendar {
-        padding: 1px;
-    }
-
-    .btn-custom {
-        font-size: 0.6rem;
-        padding: 0 2px;
-        height: 18px;
-    }
-
-    .theme-switch {
-        width: 18px;
-        height: 18px;
+        font-size: 0.7em;
+        bottom: 2px;
+        right: 2px;
     }
 
     .weekday-header .col {
-        font-size: 0.55em;
-        padding: 0;
-    }
-
-    .calendar-day {
-        min-height: 20px;
-        padding: 0;
-    }
-
-    .calendar-day .day-number {
-        font-size: 0.75em;
-    }
-
-    .calendar-day .day-label {
-        font-size: 0.45em;
-    }
-
-    #prevMonth, #nextMonth {
-        font-size: 0.55rem;
+        font-size: 0.85em;
     }
 
     #currentMonth {
-        font-size: 0.8rem;
-    }
-
-    .year-select {
-        font-size: 0.65rem;
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
     }
 
     .diary-count {
-        font-size: 0.65rem;
+        margin-left: 0;
+        margin-top: 10px;
+        font-size: 0.9rem;
+        padding: 6px 12px;
     }
 
-    .btn-group > .btn {
-        font-size: 0.6rem !important;
-        padding: 0 2px !important;
+    .year-select {
+        width: 100px;
+        font-size: 0.9rem;
+    }
+
+    .btn-custom {
+        font-size: 0.9rem;
+        padding: 6px 12px;
     }
 }
 

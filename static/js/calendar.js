@@ -141,72 +141,65 @@ class DiaryCalendar {
     }
 
     createCalendarDay(date) {
-        if (!date) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.classList.add('col');
-            emptyDiv.innerHTML = '<div class="calendar-day empty"></div>';
-            return emptyDiv;
-        }
-
-        const dateStr = this.formatDate(date);
-        const isToday = this.isToday(date);
-        const hasDiary = this.diaryDates.has(dateStr);
-        const dayLabel = this.getDayLabel(date);
-
         const dayDiv = document.createElement('div');
-        dayDiv.classList.add('col');
-        
-        const dayContent = document.createElement('div');
-        dayContent.classList.add('calendar-day');
-        
-        if (isToday) {
-            dayContent.classList.add('today');
+        dayDiv.classList.add('col', 'calendar-day');
+
+        if (date) {
+            const dateStr = this.formatDate(date);
+            const isToday = this.isToday(date);
+            const hasDiary = this.diaryDates.has(dateStr);
+
+            dayDiv.innerHTML = `
+                <div class="day-number">${date.getDate()}</div>
+                ${this.getDayLabel(date) ? `<div class="day-label">${this.getDayLabel(date)}</div>` : ''}
+            `;
+
+            if (isToday) {
+                dayDiv.classList.add('today');
+            }
+
+            if (hasDiary) {
+                dayDiv.classList.add('has-diary');
+            } else {
+                dayDiv.classList.add('no-diary');
+            }
+
+            dayDiv.addEventListener('click', () => {
+                window.location.href = `/diary/${dateStr}`;
+            });
+        } else {
+            dayDiv.classList.add('empty');
         }
-        
-        if (hasDiary) {
-            dayContent.classList.add('has-diary');
-        }
 
-        dayContent.innerHTML = `
-            <div class="day-number">${date.getDate()}</div>
-            ${dayLabel ? `<div class="day-label">${dayLabel}</div>` : ''}
-        `;
-
-        dayContent.addEventListener('click', () => {
-            window.location.href = `/diary/${dateStr}`;
-        });
-
-        dayDiv.appendChild(dayContent);
         return dayDiv;
-    }
-
-    isToday(date) {
-        const today = new Date();
-        return date.getDate() === today.getDate() &&
-            date.getMonth() === today.getMonth() &&
-            date.getFullYear() === today.getFullYear();
     }
 
     renderCalendar() {
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
+        const today = new Date();
         
         // 更新月份标题
         this.currentMonthElement.textContent = `${year}年${month + 1}月`;
 
-        // 清空现有日历内容
-        const calendarGrid = document.getElementById('calendarGrid');
-        calendarGrid.innerHTML = '';
-
         const weeks = this.getMonthCalendar(year, month);
+        let calendarHtml = '';
+
         weeks.forEach(week => {
             const row = document.createElement('div');
-            row.classList.add('row');
+            row.classList.add('row', 'g-0');
             week.forEach(day => {
                 const date = day ? new Date(year, month, day) : null;
                 row.appendChild(this.createCalendarDay(date));
             });
-            calendarGrid.appendChild(row);
+            document.getElementById('calendarGrid').appendChild(row);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    window.calendar = new DiaryCalendar();
+});
         });
     }
 }

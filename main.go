@@ -17,8 +17,8 @@ import (
 
 // Config 配置结构体
 type Config struct {
-	Title    string `yaml:"title"`
-	Server   struct {
+	Title  string `yaml:"title"`
+	Server struct {
 		Port int `yaml:"port"`
 	} `yaml:"server"`
 	Security struct {

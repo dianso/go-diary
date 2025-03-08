@@ -1,4 +1,4 @@
-name: Build Go Program for Multiple Platforms
+name: Build and Release Multi-Platform Binaries
 
 on:
   push:
@@ -8,114 +8,71 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # 必须授予写入权限才能创建 Release
+
 jobs:
-  build-linux-amd64:
+  build-all-platforms:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5  # 使用最新 v5 版本
         with:
-          go-version: '1.21'  # 确保 Go 版本有效
+          go-version: '1.22.5'    # 确保与你的实际版本一致
 
-      - name: Build for Linux amd64
+      - name: Build Linux amd64
         run: |
-          GOOS=linux GOARCH=amd64 go build -o go-diary-linux-amd64 .
+          GOOS=linux GOARCH=amd64 go build -o ./dist/go-diary-linux-amd64 .
 
-      - name: Upload Linux amd64 binary
-        uses: actions/upload-artifact@v3.1.3  # 明确指定具体版本
-        with:
-          name: go-diary-linux-amd64
-          path: go-diary-linux-amd64
-
-  build-linux-arm64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-      - name: Build for Linux arm64
+      - name: Build Linux arm64
         run: |
-          GOOS=linux GOARCH=arm64 go build -o go-diary-linux-arm64 .
-      - name: Upload Linux arm64 binary
-        uses: actions/upload-artifact@v3.1.3
-        with:
-          name: go-diary-linux-arm64
-          path: go-diary-linux-arm64
+          GOOS=linux GOARCH=arm64 go build -o ./dist/go-diary-linux-arm64 .
 
-  build-windows-amd64:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-      - name: Build for Windows amd64
+      - name: Build Windows amd64
         run: |
-          GOOS=windows GOARCH=amd64 go build -o go-diary-windows-amd64.exe .
-      - name: Upload Windows amd64 binary
-        uses: actions/upload-artifact@v3.1.3
-        with:
-          name: go-diary-windows-amd64
-          path: go-diary-windows-amd64.exe
+          GOOS=windows GOARCH=amd64 go build -o ./dist/go-diary-windows-amd64.exe .
 
-  build-windows-arm64:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-      - name: Build for Windows arm64
+      - name: Build Windows arm64
         run: |
-          GOOS=windows GOARCH=arm64 go build -o go-diary-windows-arm64.exe .
-      - name: Upload Windows arm64 binary
-        uses: actions/upload-artifact@v3.1.3
-        with:
-          name: go-diary-windows-arm64
-          path: go-diary-windows-arm64.exe
+          GOOS=windows GOARCH=arm64 go build -o ./dist/go-diary-windows-arm64.exe .
 
-  build-macos-amd64:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-      - name: Build for macOS amd64
+      - name: Build macOS amd64
         run: |
-          GOOS=darwin GOARCH=amd64 go build -o go-diary-darwin-amd64 .
-      - name: Upload macOS amd64 binary
-        uses: actions/upload-artifact@v3.1.3
-        with:
-          name: go-diary-darwin-amd64
-          path: go-diary-darwin-amd64
+          GOOS=darwin GOARCH=amd64 go build -o ./dist/go-diary-darwin-amd64 .
 
-  build-macos-arm64:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-      - name: Build for macOS arm64
+      - name: Build macOS arm64
         run: |
-          GOOS=darwin GOARCH=arm64 go build -o go-diary-darwin-arm64 .
-      - name: Upload macOS arm64 binary
-        uses: actions/upload-artifact@v3.1.3
+          GOOS=darwin GOARCH=arm64 go build -o ./dist/go-diary-darwin-arm64 .
+
+      - name: Generate Checksums
+        run: |
+          cd ./dist
+          shasum -a 256 * > checksums.txt
+
+      - name: Create Release Draft
+        id: create-release
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          name: go-diary-darwin-arm64
-          path: go-diary-darwin-arm64
+          draft: true
+          commitish: ${{ github.sha }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          draft: true
+          files: |
+            ./dist/go-diary-*
+            ./dist/checksums.txt
+          tag_name: ${{ steps.create-release.outputs.tag_name }}
+          name: ${{ steps.create-release.outputs.name }}
