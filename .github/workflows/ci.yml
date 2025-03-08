@@ -13,16 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4  # 升级到最新稳定版
+
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4  # 升级到最新版
         with:
-          go-version: '1.24'
-      - name: Build Go Program for Linux amd64
+          go-version: '1.24'       # 使用官方存在的有效版本
+
+      - name: Build for Linux amd64
         run: |
           GOOS=linux GOARCH=amd64 go build -o go-diary-linux-amd64 .
+
       - name: Upload Linux amd64 binary
-        uses: actions/upload-artifact@v2
+        if: success()  # 仅在构建成功时上传
+        uses: actions/upload-artifact@v3  # 关键修复
         with:
           name: go-diary-linux-amd64
           path: go-diary-linux-amd64
@@ -31,16 +35,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: '1.24'
-      - name: Build Go Program for Linux arm64
+      - name: Build for Linux arm64
         run: |
           GOOS=linux GOARCH=arm64 go build -o go-diary-linux-arm64 .
       - name: Upload Linux arm64 binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: go-diary-linux-arm64
           path: go-diary-linux-arm64
@@ -49,16 +53,16 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: '1.24'
-      - name: Build Go Program for Windows amd64
+      - name: Build for Windows amd64
         run: |
           GOOS=windows GOARCH=amd64 go build -o go-diary-windows-amd64.exe .
       - name: Upload Windows amd64 binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: go-diary-windows-amd64
           path: go-diary-windows-amd64.exe
@@ -67,16 +71,16 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: '1.24'
-      - name: Build Go Program for Windows arm64
+      - name: Build for Windows arm64
         run: |
           GOOS=windows GOARCH=arm64 go build -o go-diary-windows-arm64.exe .
       - name: Upload Windows arm64 binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: go-diary-windows-arm64
           path: go-diary-windows-arm64.exe
@@ -85,16 +89,16 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: '1.24'
-      - name: Build Go Program for macOS amd64
+      - name: Build for macOS amd64
         run: |
           GOOS=darwin GOARCH=amd64 go build -o go-diary-darwin-amd64 .
       - name: Upload macOS amd64 binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: go-diary-darwin-amd64
           path: go-diary-darwin-amd64
@@ -103,16 +107,16 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: '1.24'
-      - name: Build Go Program for macOS arm64
+      - name: Build for macOS arm64
         run: |
           GOOS=darwin GOARCH=arm64 go build -o go-diary-darwin-arm64 .
       - name: Upload macOS arm64 binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: go-diary-darwin-arm64
           path: go-diary-darwin-arm64
