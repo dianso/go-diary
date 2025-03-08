@@ -13,26 +13,30 @@
     <div class="container">
         <div class="calendar">
             <div class="calendar-header">
-                <div class="d-flex align-items-center">
+                <div class="d-flex flex-column">
                     <select id="yearSelect" class="form-select year-select"></select>
                     <span id="totalDiaryCount" class="diary-count">日记数量：0篇</span>
                     <h1 id="currentMonth" class="mb-0"></h1>
-                    <div class="btn-group ms-auto">
-                        <button id="prevMonth" class="btn btn-custom btn-outline-primary">＜ 上个月</button>
-                        <button id="todayBtn" class="btn btn-custom btn-primary">今天</button>
-                        <button id="nextMonth" class="btn btn-custom btn-outline-primary">下个月 ＞</button>
+                    <div class="d-flex align-items-center">
+                        <div class="btn-group">
+                            <button id="prevMonth" class="btn btn-custom btn-outline-primary">＜ 上个月</button>
+                            <button id="todayBtn" class="btn btn-custom btn-primary">今天</button>
+                            <button id="nextMonth" class="btn btn-custom btn-outline-primary">下个月 ＞</button>
+                        </div>
+                        <button class="theme-switch btn btn-custom btn-outline-primary" id="themeSwitch" title="切换主题">☀️</button>
                     </div>
-                    <button class="theme-switch btn btn-custom btn-outline-primary ms-2" id="themeSwitch" title="切换主题">☀️</button>
                 </div>
             </div>
-            <div class="row weekday-header text-center">
-                <div class="col">周一</div>
-                <div class="col">周二</div>
-                <div class="col">周三</div>
-                <div class="col">周四</div>
-                <div class="col">周五</div>
-                <div class="col">周六</div>
-                <div class="col">周日</div>
+            <div class="weekday-header">
+                <div class="row text-center">
+                    <div class="col">周一</div>
+                    <div class="col">周二</div>
+                    <div class="col">周三</div>
+                    <div class="col">周四</div>
+                    <div class="col">周五</div>
+                    <div class="col">周六</div>
+                    <div class="col">周日</div>
+                </div>
             </div>
             <div id="calendarGrid"></div>
         </div>

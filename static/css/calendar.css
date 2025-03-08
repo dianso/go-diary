@@ -142,7 +142,7 @@ body {
     .calendar {
         padding: 10px;
         margin: 10px;
-        width: 100%;
+        width: calc(100% - 20px);
     }
     
     .calendar-header .d-flex {
@@ -150,27 +150,32 @@ body {
         align-items: stretch !important;
         gap: 10px;
     }
+
+    .calendar-header .d-flex > div:last-child {
+        display: flex;
+        gap: 5px;
+    }
     
     .btn-group {
-        width: 100%;
+        flex: 1;
+        display: flex;
         justify-content: space-between;
+        margin-right: 5px;
     }
 
     .calendar-day {
         padding: 3px;
         margin: 1px;
         min-height: 40px;
+        font-size: 0.9em;
     }
 
     .calendar-day .date-label {
-        font-size: 0.9em;
-        margin-bottom: 2px;
+        font-size: 1em;
     }
 
     .calendar-day .relative-date {
         font-size: 0.7em;
-        bottom: 2px;
-        right: 2px;
     }
 
     .weekday-header .col {
@@ -190,22 +195,41 @@ body {
         padding: 6px 12px;
         text-align: center;
         width: 100%;
+        box-sizing: border-box;
     }
 
     .year-select {
         width: 100%;
         font-size: 0.9rem;
+        margin-right: 0;
     }
 
     .btn-custom {
         font-size: 0.85rem;
         padding: 6px 8px;
+        white-space: nowrap;
     }
 
     .theme-switch {
         width: 36px;
         height: 36px;
-        margin: 5px auto;
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    #calendarGrid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        margin-top: 10px;
+    }
+
+    #calendarGrid .row {
+        display: contents;
+    }
+
+    #calendarGrid .col {
+        padding: 0;
     }
 }
 
