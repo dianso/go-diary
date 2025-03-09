@@ -52,7 +52,7 @@ class DiaryCalendar {
 
     async init() {
         // 初始化年份选择器
-        this.initYearSelect();
+        await this.loadAvailableYears();
         
         // 加载日记数据
         await this.loadDiaryDates();
@@ -64,19 +64,34 @@ class DiaryCalendar {
         this.bindEvents();
     }
 
-    initYearSelect() {
-        const currentYear = this.currentDate.getFullYear();
-        const startYear = 2020;
-        const endYear = currentYear + 1;
-
-        for (let year = startYear; year <= endYear; year++) {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year + '年';
-            if (year === currentYear) {
-                option.selected = true;
+    async loadAvailableYears() {
+        try {
+            const response = await fetch('/years');
+            if (!response.ok) {
+                throw new Error('获取年份列表失败');
             }
-            this.yearSelect.appendChild(option);
+            const years = await response.json();
+            
+            // 如果没有可用年份，添加当前年份
+            if (years.length === 0) {
+                years.push(this.currentDate.getFullYear().toString());
+            }
+
+            // 清空并重新填充年份选择器
+            this.yearSelect.innerHTML = '';
+            years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year + '年';
+                if (year === this.currentDate.getFullYear().toString()) {
+                    option.selected = true;
+                }
+                this.yearSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('加载年份失败:', error);
+            // 如果加载失败，至少显示当前年份
+            this.yearSelect.innerHTML = `<option value="${this.currentDate.getFullYear()}">${this.currentDate.getFullYear()}年</option>`;
         }
     }
 

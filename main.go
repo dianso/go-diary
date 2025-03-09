@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -284,6 +285,15 @@ func main() {
 
 			c.JSON(http.StatusOK, dates)
 		})
+
+		authorized.GET("/years", func(c *gin.Context) {
+			years, err := getYearsWithDiaries()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, years)
+		})
 	}
 
 	fmt.Printf("启动服务器，监听端口 %d\n", config.Server.Port)
@@ -339,4 +349,34 @@ func formatDate(date string) (string, string) {
 		return date, numericDate
 	}
 	return "", ""
+}
+
+func getYearsWithDiaries() ([]string, error) {
+	years := make(map[string]bool)
+	err := filepath.Walk(config.Storage.DiaryRoot, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(path, ".txt") {
+			// 从路径中提取年份
+			relativePath, err := filepath.Rel(config.Storage.DiaryRoot, path)
+			if err != nil {
+				return err
+			}
+			year := strings.Split(relativePath, string(os.PathSeparator))[0]
+			years[year] = true
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 将年份转换为切片并排序
+	var yearsList []string
+	for year := range years {
+		yearsList = append(yearsList, year)
+	}
+	sort.Strings(yearsList)
+	return yearsList, nil
 }
