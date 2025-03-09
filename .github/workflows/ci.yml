@@ -1,96 +1,122 @@
-name: Go Cross-Platform Build
+name: Go Cross-Platform Build & Release
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags: 
+      - "v*"  # 通过 git tag 触发发布流程
+  workflow_dispatch:  # 允许手动触发
+
+env:
+  PROJECT_NAME: go-diary
+  GO_VERSION: '1.24'
 
 jobs:
   build:
-    name: Build Platform (${{ matrix.os }}-${{ matrix.arch }})
+    name: Build (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - os: linux
             arch: amd64
+            suffix: ""
           - os: linux
             arch: arm64
+            suffix: ""
           - os: linux
             arch: arm
             arm_version: 6
+            suffix: -v6
           - os: linux
             arch: arm
             arm_version: 7
+            suffix: -v7
           - os: windows
             arch: amd64
+            suffix: ""
           - os: windows
             arch: arm64
+            suffix: ""
           - os: darwin
             arch: amd64
+            suffix: ""
           - os: darwin
             arch: arm64
+            suffix: ""
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: ${{ env.GO_VERSION }}
 
-      - name: Build and Compress
+      - name: Build Binary
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
           GOARM: ${{ matrix.arm_version || '' }}
           CGO_ENABLED: 0
         run: |
-          # 生成二进制文件名
-          BIN_NAME="go-diary-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
+          OUTPUT="${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}"
           if [ "${{ matrix.os }}" = "windows" ]; then
-            BIN_NAME="$BIN_NAME.exe"
+            OUTPUT="$OUTPUT.exe"
           fi
+          go build -o $OUTPUT ./main.go
 
-          # 编译
-          go build -o $BIN_NAME ./main.go
-
-          # 压缩为ZIP (自动处理不同系统)
+      - name: Create Archive
+        run: |
+          BINARY="${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}"
           if [ "${{ matrix.os }}" = "windows" ]; then
-            zip "${BIN_NAME}.zip" "$BIN_NAME"
+            7z a "$BINARY.zip" "$BINARY.exe"
           else
-            tar czvf "${BIN_NAME}.tar.gz" "$BIN_NAME"
+            tar czvf "$BINARY.tar.gz" "$BINARY"
           fi
 
-      - name: Upload Platform Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pkg-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}
+          name: build-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}
           path: |
-            go-diary-*.${{ matrix.os == 'windows' && 'zip' || 'tar.gz' }}
-          if-no-files-found: error
+            ${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}.*
+          retention-days: 3
 
-  package:
-    name: Create Final Bundle
+  release:
+    name: Create Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 需要写入 Releases 的权限
+
     steps:
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Bundle All Packages
+      - name: Prepare Release Assets
         run: |
-          mkdir combined
-          find artifacts -name '*.zip' -exec cp {} combined \;
-          find artifacts -name '*.tar.gz' -exec cp {} combined \;
-          zip -r release-bundle.zip combined
+          mkdir release-assets
+          find artifacts -type f \( -name "*.zip" -o -name "*.tar.gz" \) -exec cp {} release-assets \;
 
-      - name: Upload Final Bundle
-        uses: actions/upload-artifact@v4
+          # 生成校验文件
+          cd release-assets
+          shasum -a 256 * > SHA256SUMS
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: release-bundle
-          path: release-bundle.zip
+          tag_name: ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }}"
+          body: |
+            Multi-platform build for ${{ env.PROJECT_NAME }}
+            - Build date: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            - Commit: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          files: |
+            release-assets/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
