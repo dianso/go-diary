@@ -34,12 +34,12 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4  # 已是最新版本
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4  # 已是最新版本
+        uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.24'
 
       - name: Build Binary
         env:
@@ -52,12 +52,14 @@ jobs:
           if [ "${{ matrix.os }}" = "windows" ]; then
             OUTPUT_NAME="$OUTPUT_NAME.exe"
           fi
-          go build -o $OUTPUT_NAME ./main.go  # 修改为你的主程序路径
+          go build -o $OUTPUT_NAME ./main.go
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4  # 关键修复：升级到 v4
+        uses: actions/upload-artifact@v4
         with:
           name: binaries
           path: |
             go-diary-*
           if-no-files-found: error
+          # 关键修复：允许合并多个作业的产物
+          merge: true
