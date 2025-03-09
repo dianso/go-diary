@@ -4,7 +4,7 @@
 sudo chmod +x /huo/go/go-diary/go-diary
 
 # 写入服务配置文件
-sudo tee /etc/systemd/system/go-diary.service > /dev/null <<EOF
+sudo tee /etc/systemd/system/go-diary-test.service > /dev/null <<EOF
 [Unit]
 Description=go-diary
 After=network.target
@@ -23,7 +23,7 @@ EOF
 sudo systemctl daemon-reload
 
 # 启动服务
-sudo systemctl start go-diary.service
+sudo systemctl start go-diary-test.service
 
 # 设置为自动启动
-sudo systemctl enable go-diary.service
+sudo systemctl enable go-diary-test.service

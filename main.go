@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +31,7 @@ type Config struct {
 }
 
 var config Config
+var diaryRoot string
 
 func loadConfig() error {
 	// 读取配置文件
@@ -43,47 +45,43 @@ func loadConfig() error {
 		return fmt.Errorf("解析配置文件失败: %v", err)
 	}
 
-	// 设置默认值
-	if config.Server.Port == 0 {
-		config.Server.Port = 8080
-	}
-	if config.Security.Password == "" {
-		config.Security.Password = "123456"
-	}
-	if config.Storage.DiaryRoot == "" {
-		config.Storage.DiaryRoot = "diary"
-	}
-	if config.Title == "" {
-		config.Title = "我的日记本"
-	}
-
 	return nil
 }
 
 func main() {
-	// 加载配置文件
 	if err := loadConfig(); err != nil {
-		fmt.Printf("加载配置文件失败: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("加载配置失败: %v\n", err)
+		return
 	}
 
-	r := gin.Default()
-
 	// 获取当前工作目录
-	workDir, _ := os.Getwd()
+	workDir, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("获取工作目录失败: %v\n", err)
+		return
+	}
 
-	// 使用绝对路径加载模板
-	r.LoadHTMLGlob(filepath.Join(workDir, "templates/*"))
-	r.Static("/static", filepath.Join(workDir, "static"))
-
-	// 确保diary根目录存在
-	diaryRoot := config.Storage.DiaryRoot
+	// 确保日记根目录存在
+	diaryRoot = config.Storage.DiaryRoot
 	if !filepath.IsAbs(diaryRoot) {
 		diaryRoot = filepath.Join(workDir, diaryRoot)
 	}
 	if err := os.MkdirAll(diaryRoot, 0755); err != nil {
-		panic(err)
+		fmt.Printf("创建日记根目录失败: %v\n", err)
+		return
 	}
+
+	// 设置gin为发布模式
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.Default()
+
+	// 加载模板
+	templatesDir := filepath.Join(workDir, "templates")
+	r.LoadHTMLGlob(filepath.Join(templatesDir, "*.html"))
+
+	// 加载静态文件
+	staticDir := filepath.Join(workDir, "static")
+	r.Static("/static", staticDir)
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.html", gin.H{
@@ -92,12 +90,12 @@ func main() {
 	})
 
 	r.POST("/login", func(c *gin.Context) {
-		inputPassword := c.PostForm("password")
-		if inputPassword == config.Security.Password {
-			c.SetCookie("auth", hashPassword(config.Security.Password), 3600, "/", "", false, true)
+		password := c.PostForm("password")
+		if hashPassword(password) == hashPassword(config.Security.Password) {
+			c.SetCookie("auth", "true", 3600*24*30, "/", "", false, true)
 			c.Redirect(http.StatusFound, "/calendar")
 		} else {
-			c.HTML(http.StatusUnauthorized, "login.html", gin.H{
+			c.HTML(http.StatusOK, "login.html", gin.H{
 				"title": config.Title,
 				"error": "密码错误",
 			})
@@ -108,32 +106,24 @@ func main() {
 	authorized.Use(authMiddleware())
 	{
 		authorized.GET("/calendar", func(c *gin.Context) {
-			now := time.Now()
-			title := fmt.Sprintf("%d年%d月", now.Year(), int(now.Month()))
-
 			c.HTML(http.StatusOK, "calendar.html", gin.H{
-				"title": title,
+				"title": config.Title,
 			})
 		})
 
-		authorized.GET("/diary", func(c *gin.Context) {
-			dateStr := c.Query("date")
-			if len(dateStr) != 8 {
+		authorized.GET("/diary/:date", func(c *gin.Context) {
+			date := c.Param("date")
+			if !isValidDate(date) {
 				c.String(http.StatusBadRequest, "无效的日期格式")
 				return
 			}
 
-			// 将YYYYMMDD格式转换为YYYY-MM-DD格式
-			date := fmt.Sprintf("%s-%s-%s", dateStr[:4], dateStr[4:6], dateStr[6:])
-			dateObj, err := time.Parse("2006-01-02", date)
-			if err != nil {
-				c.String(http.StatusBadRequest, "无效的日期格式")
-				return
-			}
-
-			year := dateObj.Format("2006")
-			month := dateObj.Format("2006年1月")
-			fileName := dateStr + ".txt"
+			formattedDate, numericDate := formatDate(date)
+			year := numericDate[:4]
+			monthNum := numericDate[4:6]
+			monthInt, _ := strconv.Atoi(monthNum)
+			monthStr := fmt.Sprintf("%s年%d月", year, monthInt)
+			fileName := numericDate + ".txt"
 			yearDir := filepath.Join(diaryRoot, year)
 			filePath := filepath.Join(yearDir, fileName)
 
@@ -144,53 +134,49 @@ func main() {
 
 			c.HTML(http.StatusOK, "diary.html", gin.H{
 				"title":   config.Title,
-				"date":    date,
-				"month":   month,
+				"date":    formattedDate,
+				"month":   monthStr,
 				"content": content,
 			})
 		})
 
-		authorized.POST("/diary", func(c *gin.Context) {
-			dateStr := c.Query("date")
-			if len(dateStr) != 8 {
-				c.String(http.StatusBadRequest, "无效的日期格式")
+		authorized.POST("/diary/:date", func(c *gin.Context) {
+			date := c.Param("date")
+			if !isValidDate(date) {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error": "无效的日期格式",
+				})
 				return
 			}
 
-			// 将YYYYMMDD格式转换为YYYY-MM-DD格式
-			date := fmt.Sprintf("%s-%s-%s", dateStr[:4], dateStr[4:6], dateStr[6:])
-			dateObj, err := time.Parse("2006-01-02", date)
-			if err != nil {
-				c.String(http.StatusBadRequest, "无效的日期格式")
-				return
-			}
-
-			// 接收JSON格式的数据
-			var data struct {
-				Content string `json:"content"`
-			}
-			if err := c.BindJSON(&data); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "无效的数据格式"})
-				return
-			}
-
-			year := dateObj.Format("2006")
+			_, numericDate := formatDate(date)
+			content := c.PostForm("content")
+			year := numericDate[:4]
+			fileName := numericDate + ".txt"
 			yearDir := filepath.Join(diaryRoot, year)
 
-			// 创建年份目录
+			// 确保目录存在
 			if err := os.MkdirAll(yearDir, 0755); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "创建目录失败"})
+				fmt.Printf("创建目录失败: %v\n", err)
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "创建目录失败",
+				})
 				return
 			}
 
 			// 保存文件
-			filePath := filepath.Join(yearDir, dateStr+".txt")
-			if err := ioutil.WriteFile(filePath, []byte(data.Content), 0644); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "保存失败"})
+			filePath := filepath.Join(yearDir, fileName)
+			if err := ioutil.WriteFile(filePath, []byte(content), 0644); err != nil {
+				fmt.Printf("保存文件失败: %v\n", err)
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "保存失败",
+				})
 				return
 			}
 
-			c.JSON(http.StatusOK, gin.H{"message": "保存成功"})
+			c.JSON(http.StatusOK, gin.H{
+				"message": "保存成功",
+			})
 		})
 
 		authorized.GET("/api/diary-dates", func(c *gin.Context) {
@@ -200,30 +186,24 @@ func main() {
 			years, err := ioutil.ReadDir(diaryRoot)
 			if err != nil {
 				fmt.Printf("读取diary目录失败: %v\n", err)
-				c.JSON(http.StatusOK, dates) // 返回空数组
+				c.JSON(http.StatusOK, dates)
 				return
 			}
 
 			for _, year := range years {
-				if !year.IsDir() {
-					continue
-				}
+				if year.IsDir() {
+					yearPath := filepath.Join(diaryRoot, year.Name())
+					files, err := ioutil.ReadDir(yearPath)
+					if err != nil {
+						continue
+					}
 
-				// 遍历年份目录下的所有.txt文件
-				yearPath := filepath.Join(diaryRoot, year.Name())
-				files, err := ioutil.ReadDir(yearPath)
-				if err != nil {
-					fmt.Printf("读取年份目录失败 %s: %v\n", year.Name(), err)
-					continue
-				}
-
-				for _, file := range files {
-					if !file.IsDir() && strings.HasSuffix(file.Name(), ".txt") {
-						baseName := strings.TrimSuffix(file.Name(), ".txt")
-						if len(baseName) == 8 {
-							// 转换为YYYY-MM-DD格式
-							date := fmt.Sprintf("%s-%s-%s", baseName[:4], baseName[4:6], baseName[6:])
-							dates = append(dates, date)
+					for _, file := range files {
+						if !file.IsDir() && strings.HasSuffix(file.Name(), ".txt") {
+							date := strings.TrimSuffix(file.Name(), ".txt")
+							if len(date) == 8 {
+								dates = append(dates, date)
+							}
 						}
 					}
 				}
@@ -233,20 +213,19 @@ func main() {
 		})
 	}
 
-	// 启动服务器
-	addr := fmt.Sprintf(":%d", config.Server.Port)
-	fmt.Printf("服务器启动在 http://localhost%s\n", addr)
-	r.Run(addr)
+	fmt.Printf("启动服务器，监听端口 %d\n", config.Server.Port)
+	r.Run(fmt.Sprintf(":%d", config.Server.Port))
 }
 
 func authMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		auth, _ := c.Cookie("auth")
-		if auth != hashPassword(config.Security.Password) {
+		if auth != "true" {
 			c.Redirect(http.StatusFound, "/")
 			c.Abort()
 			return
 		}
+		c.Next()
 	}
 }
 
@@ -256,6 +235,35 @@ func hashPassword(password string) string {
 }
 
 func isValidDate(date string) bool {
-	_, err := time.Parse("2006-01-02", date)
+	formattedDate, _ := formatDate(date)
+	if formattedDate == "" {
+		return false
+	}
+	_, err := time.Parse("2006-01-02", formattedDate)
 	return err == nil
+}
+
+func formatDate(date string) (string, string) {
+	if len(date) == 8 {
+		year := date[:4]
+		month := date[4:6]
+		day := date[6:]
+		if _, err := time.Parse("20060102", date); err != nil {
+			return "", ""
+		}
+		return year + "-" + month + "-" + day, date
+	} else if len(date) == 10 {
+		if date[4] != '-' || date[7] != '-' {
+			return "", ""
+		}
+		year := date[:4]
+		month := date[5:7]
+		day := date[8:]
+		numericDate := year + month + day
+		if _, err := time.Parse("2006-01-02", date); err != nil {
+			return "", ""
+		}
+		return date, numericDate
+	}
+	return "", ""
 }

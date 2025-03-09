@@ -4,9 +4,9 @@
     <title id="pageTitle">{{.title}}</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/static/css/bootstrap.min.css?v=202503081749" rel="stylesheet">
-    <link href="/static/css/calendar.css?v=202503081749" rel="stylesheet">
-    <link href="/static/css/theme.css?v=202503081749" rel="stylesheet">
+    <link href="/static/css/bootstrap.min.css?v=202503091054" rel="stylesheet">
+    <link href="/static/css/style.css?v=202503091054" rel="stylesheet">
+    <script src="/static/js/app.js?v=202503091054"></script>
 </head>
 <body>
     <div class="container">
@@ -18,12 +18,11 @@
                         <button id="prevMonth" class="btn btn-primary" title="查看上个月">上个月</button>
                         <button id="todayBtn" class="btn btn-primary" title="返回今天">今天</button>
                         <button id="nextMonth" class="btn btn-primary" title="查看下个月">下个月</button>
-                    </div>
-                    <div class="nav-right">
                         <span id="totalDiaryCount" class="diary-count">日记数量：0篇</span>
                         <button id="themeSwitch" class="btn theme-btn" title="切换主题">🌙</button>
                     </div>
                 </div>
+                <h2 id="currentMonth" class="current-month"></h2>
             </div>
             <div class="weekday-header">
                 <div class="col">一</div>
@@ -37,14 +36,5 @@
             <div id="calendarGrid"></div>
         </div>
     </div>
-    <script>
-        // 初始年月数据
-        window.initialData = {
-            year: parseInt("{{.year}}"),
-            month: parseInt("{{.month}}")
-        };
-    </script>
-    <script src="/static/js/theme.js?v=202503081749"></script>
-    <script src="/static/js/calendar.js?v=202503081749"></script>
 </body>
 </html>

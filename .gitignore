@@ -5,6 +5,14 @@
 *.so
 *.dylib
 go-diary
+
+# Go 工作目录
+/bin/
+/pkg/
+
+# 测试文件
+*.test
+*.out
 go-diary.sh
 
 # IDE 配置文件
