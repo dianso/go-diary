@@ -76,6 +76,13 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
+	// 添加时间戳函数到模板
+	r.SetFuncMap(template.FuncMap{
+		"timestamp": func() string {
+			return time.Now().Format("200601021504")
+		},
+	})
+
 	// 加载模板
 	templatesDir := filepath.Join(workDir, "templates")
 	r.LoadHTMLGlob(filepath.Join(templatesDir, "*.html"))
@@ -83,13 +90,6 @@ func main() {
 	// 加载静态文件
 	staticDir := filepath.Join(workDir, "static")
 	r.Static("/static", staticDir)
-
-	// 添加时间戳函数到模板
-	r.SetFuncMap(template.FuncMap{
-		"timestamp": func() string {
-			return time.Now().Format("200601021504")
-		},
-	})
 
 	r.GET("/", func(c *gin.Context) {
 		auth, _ := c.Cookie("auth")

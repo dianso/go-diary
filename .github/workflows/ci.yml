@@ -1,27 +1,65 @@
-name: Go Build
+name: Go Cross-Platform Build
 
 on:
   push:
-    branches: [ "main" ]  # 监听main分支的推送
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]  # 监听针对main分支的PR
+    branches: [ "main" ]
 
 jobs:
   build:
-    name: Build and Verify
-    runs-on: ubuntu-latest  # 使用Ubuntu系统作为编译环境
+    name: Build All Platforms
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 定义所有目标平台和架构组合
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: linux
+            arch: arm
+            arm_version: 6
+          - os: linux
+            arch: arm
+            arm_version: 7
+          - os: windows
+            arch: amd64
+          - os: windows
+            arch: arm64
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4  # 检出你的代码
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'  # 指定你的Go版本（根据项目要求修改）
+          go-version: '1.21'
 
-      - name: Install Dependencies
-        run: go mod download  # 下载依赖（如果使用Go Modules）
+      - name: Build Binary
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          # 如果是 ARMv6/ARMv7，需要设置 GOARM
+          GOARM: ${{ matrix.arm_version || '' }}
+          CGO_ENABLED: 0  # 禁用 CGO 以静态编译
+        run: |
+          OUTPUT_NAME="go-diary-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            OUTPUT_NAME="$OUTPUT_NAME.exe"
+          fi
+          go build -o $OUTPUT_NAME ./main.go  # 修改为你的主程序路径
 
-      - name: Build
-        run: go build -v ./...  # 编译整个项目，验证是否通过
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          path: |
+            go-diary-*
+          if-no-files-found: error
