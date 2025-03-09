@@ -1,78 +1,27 @@
-name: Build and Release Multi-Platform Binaries
+name: Go Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]  # 监听main分支的推送
   pull_request:
-    branches:
-      - main
-
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: false
-
-permissions:
-  contents: write  # 必须授予写入权限才能创建 Release
+    branches: [ "main" ]  # 监听针对main分支的PR
 
 jobs:
-  build-all-platforms:
-    runs-on: ubuntu-latest
+  build:
+    name: Build and Verify
+    runs-on: ubuntu-latest  # 使用Ubuntu系统作为编译环境
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4  # 检出你的代码
 
       - name: Set up Go
-        uses: actions/setup-go@v5  # 使用最新 v5 版本
+        uses: actions/setup-go@v4
         with:
-          go-version: '1.22.5'    # 确保与你的实际版本一致
+          go-version: '1.21'  # 指定你的Go版本（根据项目要求修改）
 
-      - name: Build Linux amd64
-        run: |
-          GOOS=linux GOARCH=amd64 go build -o ./dist/go-diary-linux-amd64 .
+      - name: Install Dependencies
+        run: go mod download  # 下载依赖（如果使用Go Modules）
 
-      - name: Build Linux arm64
-        run: |
-          GOOS=linux GOARCH=arm64 go build -o ./dist/go-diary-linux-arm64 .
-
-      - name: Build Windows amd64
-        run: |
-          GOOS=windows GOARCH=amd64 go build -o ./dist/go-diary-windows-amd64.exe .
-
-      - name: Build Windows arm64
-        run: |
-          GOOS=windows GOARCH=arm64 go build -o ./dist/go-diary-windows-arm64.exe .
-
-      - name: Build macOS amd64
-        run: |
-          GOOS=darwin GOARCH=amd64 go build -o ./dist/go-diary-darwin-amd64 .
-
-      - name: Build macOS arm64
-        run: |
-          GOOS=darwin GOARCH=arm64 go build -o ./dist/go-diary-darwin-arm64 .
-
-      - name: Generate Checksums
-        run: |
-          cd ./dist
-          shasum -a 256 * > checksums.txt
-
-      - name: Create Release Draft
-        id: create-release
-        uses: release-drafter/release-drafter@v6
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          draft: true
-          commitish: ${{ github.sha }}
-
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          draft: true
-          files: |
-            ./dist/go-diary-*
-            ./dist/checksums.txt
-          tag_name: ${{ steps.create-release.outputs.tag_name }}
-          name: ${{ steps.create-release.outputs.name }}
+      - name: Build
+        run: go build -v ./...  # 编译整个项目，验证是否通过

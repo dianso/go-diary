@@ -4,7 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"html/template"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -50,8 +52,7 @@ func loadConfig() error {
 
 func main() {
 	if err := loadConfig(); err != nil {
-		fmt.Printf("加载配置失败: %v\n", err)
-		return
+		log.Fatal(err)
 	}
 
 	// 获取当前工作目录
@@ -83,7 +84,19 @@ func main() {
 	staticDir := filepath.Join(workDir, "static")
 	r.Static("/static", staticDir)
 
+	// 添加时间戳函数到模板
+	r.SetFuncMap(template.FuncMap{
+		"timestamp": func() string {
+			return time.Now().Format("200601021504")
+		},
+	})
+
 	r.GET("/", func(c *gin.Context) {
+		auth, _ := c.Cookie("auth")
+		if auth == "true" {
+			c.Redirect(http.StatusFound, "/calendar")
+			return
+		}
 		c.HTML(http.StatusOK, "login.html", gin.H{
 			"title": config.Title,
 		})
