@@ -1,7 +1,7 @@
-title: "备胎日记本"
+title: 备胎日记本
 server:
-  port: 25252
+    port: 25252
 security:
-  password: "123456"
+    password: "123456"
 storage:
-  diary_root: "diary"
+    diary_root: diary

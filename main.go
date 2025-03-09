@@ -2,9 +2,11 @@ package main
 
 import (
 	"crypto/sha256"
+	"embed"
 	"encoding/hex"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,6 +19,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed templates/*
+var templatesFS embed.FS
+
+//go:embed static/*
+var staticFS embed.FS
 
 // Config 配置结构体
 type Config struct {
@@ -35,16 +43,65 @@ type Config struct {
 var config Config
 var diaryRoot string
 
+// 默认配置
+var defaultConfig = Config{
+	Title: "备胎日记本",
+	Server: struct {
+		Port int `yaml:"port"`
+	}{
+		Port: 25252,
+	},
+	Security: struct {
+		Password string `yaml:"password"`
+	}{
+		Password: "123456",
+	},
+	Storage: struct {
+		DiaryRoot string `yaml:"diary_root"`
+	}{
+		DiaryRoot: "diary",
+	},
+}
+
+func createDefaultConfig() error {
+	// 将默认配置转换为YAML格式
+	data, err := yaml.Marshal(&defaultConfig)
+	if err != nil {
+		return fmt.Errorf("序列化默认配置失败: %v", err)
+	}
+
+	// 写入配置文件
+	if err := ioutil.WriteFile("config.yaml", data, 0644); err != nil {
+		return fmt.Errorf("写入配置文件失败: %v", err)
+	}
+
+	return nil
+}
+
 func loadConfig() error {
+	// 检查配置文件是否存在
+	if _, err := os.Stat("config.yaml"); os.IsNotExist(err) {
+		fmt.Println("配置文件不存在，创建默认配置...")
+		if err := createDefaultConfig(); err != nil {
+			return err
+		}
+		fmt.Println("默认配置文件已创建")
+	}
+
 	// 读取配置文件
 	data, err := ioutil.ReadFile("config.yaml")
 	if err != nil {
 		return fmt.Errorf("读取配置文件失败: %v", err)
 	}
 
-	// 解析配置文件
+	// 解析配置
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("解析配置文件失败: %v", err)
+	}
+
+	// 确保日记目录存在
+	if err := os.MkdirAll(config.Storage.DiaryRoot, 0755); err != nil {
+		return fmt.Errorf("创建日记目录失败: %v", err)
 	}
 
 	return nil
@@ -83,13 +140,16 @@ func main() {
 		},
 	})
 
-	// 加载模板
-	templatesDir := filepath.Join(workDir, "templates")
-	r.LoadHTMLGlob(filepath.Join(templatesDir, "*.html"))
+	// 加载嵌入的模板
+	templ := template.Must(template.New("").Funcs(r.FuncMap).ParseFS(templatesFS, "templates/*.html"))
+	r.SetHTMLTemplate(templ)
 
-	// 加载静态文件
-	staticDir := filepath.Join(workDir, "static")
-	r.Static("/static", staticDir)
+	// 提供静态文件服务
+	staticSubFS, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		log.Fatal(err)
+	}
+	r.StaticFS("/static", http.FS(staticSubFS))
 
 	r.GET("/", func(c *gin.Context) {
 		auth, _ := c.Cookie("auth")
