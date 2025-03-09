@@ -1,8 +1,15 @@
 name: Go Cross-Platform Build & Release
 
+on:
+  push:
+    tags: 
+      - "v*"
+  workflow_dispatch:
+
 env:
   PROJECT_NAME: go-diary
-  GO_VERSION: '1.21'
+  GO_VERSION: '1.24'
+  CONFIG_FILE: config.yml  # 需要打包的配置文件
 
 jobs:
   build:
@@ -13,8 +20,22 @@ jobs:
         include:
           - os: linux
             arch: amd64
-            suffix: ""
-          # ... 其他平台配置保持不变 ...
+          - os: linux
+            arch: arm64
+          - os: linux
+            arch: arm
+            arm_version: 6
+          - os: linux
+            arch: arm
+            arm_version: 7
+          - os: windows
+            arch: amd64
+          - os: windows
+            arch: arm64
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
 
     steps:
       - name: Checkout Code
@@ -32,43 +53,88 @@ jobs:
           GOARM: ${{ matrix.arm_version || '' }}
           CGO_ENABLED: 0
         run: |
-          OUTPUT="${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}"
+          OUTPUT="${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
           if [ "${{ matrix.os }}" = "windows" ]; then
             OUTPUT="$OUTPUT.exe"
           fi
-          go build -o $OUTPUT ./main.go || exit 1
+          
+          # 编译可执行文件
+          go build -o $OUTPUT ./main.go
+          
+          # 验证文件存在
           if [ ! -f "$OUTPUT" ]; then
             echo "❌ 编译失败：未生成文件 $OUTPUT"
             exit 1
           fi
-          chmod +x $OUTPUT
-          echo "✅ 文件权限：$(ls -l $OUTPUT)"
 
-      - name: Create Archive
+      - name: Prepare Package
         run: |
-          BINARY="${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}"
-          echo "=== 调试：当前目录 ==="
-          pwd
-          echo "=== 调试：文件列表 ==="
-          ls -al
+          # 创建临时目录
+          TEMP_DIR="package-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
+          mkdir $TEMP_DIR
           
-          if [ -f "$BINARY" ]; then
-            echo "✅ 文件存在：$BINARY"
-          else
-            echo "❌ 文件不存在：$BINARY"
-            exit 1
-          fi
-
+          # 复制文件
+          BINARY="${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
           if [ "${{ matrix.os }}" = "windows" ]; then
-            7z a "$BINARY.zip" "$BINARY.exe"
+            mv "$BINARY.exe" $TEMP_DIR/
           else
-            echo "=== 执行压缩 ==="
-            tar czvf "$BINARY.tar.gz" "$BINARY"
+            mv $BINARY $TEMP_DIR/
           fi
+          
+          # 复制配置文件
+          cp ${{ env.CONFIG_FILE }} $TEMP_DIR/
+          
+          # 创建压缩包
+          zip -r "$TEMP_DIR.zip" $TEMP_DIR
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}
+          name: ${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}
           path: |
-            ${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}.*
+            package-*.zip
+          retention-days: 3
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare Release Assets
+        run: |
+          # 合并所有zip包
+          mkdir release-assets
+          find artifacts -name '*.zip' -exec cp {} release-assets \;
+
+          # 生成校验文件
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }}"
+          body: |
+            ## Multi-Platform Build
+            
+            **Version**: ${{ github.ref_name }}  
+            **Build Date**: $(date -u +'%Y-%m-%dT%H:%M:%SZ')  
+            **Commit**: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+            
+            ### 包含平台：
+            ${{ join(matrix.*, ', ') }}
+          files: |
+            release-assets/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
