@@ -9,13 +9,14 @@ on:
 env:
   PROJECT_NAME: go-diary
   GO_VERSION: '1.24'
-  CONFIG_FILE: config.yml  # 需要打包的配置文件
+  CONFIG_FILE: config.yml
 
 jobs:
   build:
     name: Build (${{ matrix.os }}-${{ matrix.arch }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os == 'windows' && 'windows-latest' || 'ubuntu-latest' }}
     strategy:
+      fail-fast: false  # 关键修复：一个平台失败不影响其他平台
       matrix:
         include:
           - os: linux
@@ -46,6 +47,11 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      # Windows 专用步骤：安装 zip
+      - name: Install zip (Windows)
+        if: matrix.os == 'windows'
+        run: choco install zip -y
+
       - name: Build Binary
         env:
           GOOS: ${{ matrix.os }}
@@ -53,39 +59,54 @@ jobs:
           GOARM: ${{ matrix.arm_version || '' }}
           CGO_ENABLED: 0
         run: |
+          # 生成带版本号的文件名
           OUTPUT="${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
           if [ "${{ matrix.os }}" = "windows" ]; then
             OUTPUT="$OUTPUT.exe"
           fi
-          
-          # 编译可执行文件
+
+          echo "=== 开始编译 ==="
           go build -o $OUTPUT ./main.go
           
-          # 验证文件存在
+          echo "=== 验证文件 ==="
+          ls -al
           if [ ! -f "$OUTPUT" ]; then
-            echo "❌ 编译失败：未生成文件 $OUTPUT"
+            echo "::error ::编译失败：未生成 $OUTPUT"
             exit 1
           fi
 
       - name: Prepare Package
         run: |
-          # 创建临时目录
-          TEMP_DIR="package-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
-          mkdir $TEMP_DIR
-          
-          # 复制文件
+          # 文件名定义
           BINARY="${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
+          ZIP_NAME="package-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}.zip"
+
+          # 创建临时目录
+          mkdir _package
+
+          # 处理可执行文件
           if [ "${{ matrix.os }}" = "windows" ]; then
-            mv "$BINARY.exe" $TEMP_DIR/
+            cp "$BINARY.exe" _package/
           else
-            mv $BINARY $TEMP_DIR/
+            cp $BINARY _package/
           fi
-          
+
           # 复制配置文件
-          cp ${{ env.CONFIG_FILE }} $TEMP_DIR/
-          
-          # 创建压缩包
-          zip -r "$TEMP_DIR.zip" $TEMP_DIR
+          echo "=== 复制配置文件 ==="
+          cp ${{ env.CONFIG_FILE }} _package/ || echo "::warning ::配置文件不存在，继续打包"
+
+          # 压缩操作
+          echo "=== 开始压缩 ==="
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            cd _package
+            zip -r ../$ZIP_NAME *
+            cd ..
+          else
+            zip -r $ZIP_NAME _package/*
+          fi
+
+          echo "=== 最终文件 ==="
+          ls -al *.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -110,10 +131,9 @@ jobs:
 
       - name: Prepare Release Assets
         run: |
-          # 合并所有zip包
           mkdir release-assets
           find artifacts -name '*.zip' -exec cp {} release-assets \;
-
+          
           # 生成校验文件
           cd release-assets
           sha256sum * > SHA256SUMS.txt
@@ -124,13 +144,12 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: "Release ${{ github.ref_name }}"
           body: |
-            ## Multi-Platform Build
+            ### 构建信息
+            - **版本**: ${{ github.ref_name }}
+            - **构建时间**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            - **提交**: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
             
-            **Version**: ${{ github.ref_name }}  
-            **Build Date**: $(date -u +'%Y-%m-%dT%H:%M:%SZ')  
-            **Commit**: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-            
-            ### 包含平台：
+            ### 支持平台
             ${{ join(matrix.*, ', ') }}
           files: |
             release-assets/*
