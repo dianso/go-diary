@@ -9,7 +9,6 @@ on:
 env:
   PROJECT_NAME: go-diary
   GO_VERSION: '1.24'
-  CONFIG_FILE: config.yml
 
 jobs:
   build:
@@ -47,11 +46,6 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      # Windows 专用步骤：安装 zip
-      - name: Install zip (Windows)
-        if: matrix.os == 'windows'
-        run: choco install zip -y
-
       - name: Build Binary
         shell: bash  # 强制使用 Bash，避免 Windows 使用 PowerShell
         env:
@@ -76,46 +70,12 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare Package
-        shell: bash  # 强制使用 Bash
-        run: |
-          # 文件名定义
-          BINARY="${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
-          ZIP_NAME="package-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}.zip"
-
-          # 创建临时目录
-          mkdir _package
-
-          # 处理可执行文件
-          if [ "${{ matrix.os }}" = "windows" ]; then
-            cp "$BINARY.exe" _package/
-          else
-            cp $BINARY _package/
-          fi
-
-          # 复制配置文件
-          echo "=== 复制配置文件 ==="
-          cp ${{ env.CONFIG_FILE }} _package/ || echo "::warning ::配置文件不存在，继续打包"
-
-          # 压缩操作
-          echo "=== 开始压缩 ==="
-          if [ "${{ matrix.os }}" = "windows" ]; then
-            cd _package
-            zip -r ../$ZIP_NAME *
-            cd ..
-          else
-            zip -r $ZIP_NAME _package/*
-          fi
-
-          echo "=== 最终文件 ==="
-          ls -al *.zip
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}
           path: |
-            package-*.zip
+            go-diary-*
           retention-days: 3
 
   release:
@@ -126,16 +86,19 @@ jobs:
       contents: write
 
     steps:
+      - name: Set Build Time
+        run: echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
       - name: Prepare Release Assets
-        shell: bash  # 强制使用 Bash
+        shell: bash
         run: |
           mkdir release-assets
-          find artifacts -name '*.zip' -exec cp {} release-assets \;
+          find artifacts -type f -exec mv {} release-assets/ \;
           
           # 生成校验文件
           cd release-assets
@@ -149,7 +112,7 @@ jobs:
           body: |
             ### 构建信息
             - **版本**: ${{ github.ref_name }}
-            - **构建时间**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            - **构建时间**: ${{ env.BUILD_TIME }}
             - **提交**: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
             
             ### 支持平台
