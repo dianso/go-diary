@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build All Platforms
+    name: Build Platform (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -39,27 +39,58 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24'
+          go-version: '1.21'
 
-      - name: Build Binary
+      - name: Build and Compress
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
           GOARM: ${{ matrix.arm_version || '' }}
           CGO_ENABLED: 0
         run: |
-          OUTPUT_NAME="go-diary-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
+          # 生成二进制文件名
+          BIN_NAME="go-diary-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}"
           if [ "${{ matrix.os }}" = "windows" ]; then
-            OUTPUT_NAME="$OUTPUT_NAME.exe"
+            BIN_NAME="$BIN_NAME.exe"
           fi
-          go build -o $OUTPUT_NAME ./main.go
 
-      - name: Upload Artifacts
+          # 编译
+          go build -o $BIN_NAME ./main.go
+
+          # 压缩为ZIP (自动处理不同系统)
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            zip "${BIN_NAME}.zip" "$BIN_NAME"
+          else
+            tar czvf "${BIN_NAME}.tar.gz" "$BIN_NAME"
+          fi
+
+      - name: Upload Platform Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: pkg-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm_version || '' }}
           path: |
-            go-diary-*
+            go-diary-*.${{ matrix.os == 'windows' && 'zip' || 'tar.gz' }}
           if-no-files-found: error
-          # 关键修复：允许合并多个作业的产物
-          merge: true
+
+  package:
+    name: Create Final Bundle
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Bundle All Packages
+        run: |
+          mkdir combined
+          find artifacts -name '*.zip' -exec cp {} combined \;
+          find artifacts -name '*.tar.gz' -exec cp {} combined \;
+          zip -r release-bundle.zip combined
+
+      - name: Upload Final Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle
+          path: release-bundle.zip
