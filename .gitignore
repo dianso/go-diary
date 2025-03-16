@@ -5,6 +5,7 @@
 *.so
 *.dylib
 go-diary
+go-diary.sh
 
 # Go 工作目录
 /bin/
